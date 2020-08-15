@@ -13,14 +13,14 @@ class MyDumper(yaml.Dumper):
 
 def add(schema, configure):
     if schema in configure['schema_list']:
-        print('Schema ' + schema + ' already exist in default.yaml')
+        print('Schema ' + schema['schema'] + ' already exist in default.yaml')
         return
     configure['schema_list'].append(schema)
 
 
 def remove(schema, configure):
     if schema not in configure['schema_list']:
-        print('Schema' + schema + ' doesn‘t exist in default.yaml')
+        print('Schema ' + schema['schema'] + ' doesn‘t exist in default.yaml')
         return
     configure['schema_list'].remove(schema)
 
