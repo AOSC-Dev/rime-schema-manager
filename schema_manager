@@ -30,23 +30,14 @@ def main():
     with open('/usr/share/rime-data/default.yaml', 'r') as f:
         configure = yaml.safe_load(f)
 
-    configure['schema_list'] = configure.get('schema_list', [])
-
-    if len(argv) <= 2 or argv[1] != 'add' or argv[1] != 'remove':
+    configure['schema_list'] = configure.get('schema_list', []) or []
+    if len(argv) <= 2 or (argv[1] != 'add' and argv[1] != 'remove'):
         print('Usage: schema_manager add/remove $schema_name eg: schema_manager add/remove luna_pinyin')
         exit(1)
 
     schema = {'schema': argv[2]}
 
     if argv[1] == 'add':
-        configure = add(schema, configure)
+        add(schema, configure)
     elif argv[1] == 'remove':
-        configure = remove(schema, configure)
-
-    with open('/usr/share/rime-data/default.yaml', 'w') as f:
-        yaml.dump(configure, Dumper=MyDumper,
-                  default_flow_style=False, stream=f)
-
-
-if __name__ == '__main__':
-    main()
+        remove(schema, configure)
