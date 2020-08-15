@@ -46,5 +46,5 @@ def main():
         yaml.dump(configure, Dumper=MyDumper,
                   default_flow_style=False, stream=f)
         
-    if __name__ == '__main__':
-        main()
+if __name__ == '__main__':
+    main()
