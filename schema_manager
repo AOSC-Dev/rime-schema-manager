@@ -1,0 +1,52 @@
+#!/usr/bin/python3
+
+import sys
+import yaml
+
+# https://stackoverflow.com/questions/25108581/python-yaml-dump-bad-indentation
+
+
+class MyDumper(yaml.Dumper):
+    def increase_indent(self, flow=False, indentless=False):
+        return super(MyDumper, self).increase_indent(flow, False)
+
+
+def add(schema, configure):
+    if schema in configure['schema_list']:
+        print('Schema already exist in default.yaml')
+        exit(1)
+    configure['schema_list'].append(schema)
+
+
+def remove(schema, configure):
+    if schema not in configure['schema_list']:
+        print('Schema doesn‘t exist in default.yaml')
+        exit(1)
+    configure['schema_list'].remove(schema)
+
+
+def main():
+    argv = sys.argv
+    with open('/usr/share/rime-data/default.yaml', 'r') as f:
+        configure = yaml.safe_load(f)
+
+    configure['schema_list'] = configure.get('schema_list', [])
+
+    if len(argv) <= 2 or argv[1] != 'add' or argv[1] != 'remove':
+        print('Usage: schema_manager add/remove $schema_name eg: schema_manager add/remove luna_pinyin')
+        exit(1)
+
+    schema = {'schema': argv[1]}
+
+    if argv[1] == 'add':
+        configure = add(schema, configure)
+    elif argv[1] == 'remove':
+        configure = remove(schema, configure)
+
+    with open('/usr/share/rime-data/default.yaml', 'w') as f:
+        yaml.dump(configure, Dumper=MyDumper,
+                  default_flow_style=False, stream=f)
+
+
+if __name__ == '__main__':
+    main()
