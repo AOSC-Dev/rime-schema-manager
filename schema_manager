@@ -14,14 +14,14 @@ class MyDumper(yaml.Dumper):
 def add(schema, configure):
     if schema in configure['schema_list']:
         print('Schema already exist in default.yaml')
-        exit(1)
+        return
     configure['schema_list'].append(schema)
 
 
 def remove(schema, configure):
     if schema not in configure['schema_list']:
         print('Schema doesn‘t exist in default.yaml')
-        exit(1)
+        return
     configure['schema_list'].remove(schema)
 
 
@@ -39,11 +39,14 @@ def main():
         print('Usage: schema_manager add/remove $schema_name eg: schema_manager add/remove luna_pinyin')
         exit(1)
 
-    schema = {'schema': argv[2]}
-    if argv[1] == 'add':
-        add(schema, configure)
-    elif argv[1] == 'remove':
-        remove(schema, configure)
+    schemas = argv[2:]
+
+    for schema in schemas:
+        schema = {'schema': schema}
+        if argv[1] == 'add':
+            add(schema, configure)
+        elif argv[1] == 'remove':
+            remove(schema, configure)
 
     with open('/usr/share/rime-data/default.yaml', 'w') as f:
         yaml.dump(configure, Dumper=MyDumper,
