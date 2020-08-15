@@ -45,3 +45,6 @@ def main():
     with open('/usr/share/rime-data/default.yaml', 'w') as f:
         yaml.dump(configure, Dumper=MyDumper,
                   default_flow_style=False, stream=f)
+        
+    if __name__ == '__main__':
+        main()
