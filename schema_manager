@@ -41,3 +41,7 @@ def main():
         add(schema, configure)
     elif argv[1] == 'remove':
         remove(schema, configure)
+
+    with open('/usr/share/rime-data/default.yaml', 'w') as f:
+        yaml.dump(configure, Dumper=MyDumper,
+                  default_flow_style=False, stream=f)
