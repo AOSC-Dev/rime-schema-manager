@@ -36,7 +36,7 @@ def main():
         print('Usage: schema_manager add/remove $schema_name eg: schema_manager add/remove luna_pinyin')
         exit(1)
 
-    schema = {'schema': argv[1]}
+    schema = {'schema': argv[2]}
 
     if argv[1] == 'add':
         configure = add(schema, configure)
