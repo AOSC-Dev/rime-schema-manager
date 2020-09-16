@@ -25,11 +25,8 @@ def remove(schema, configure):
     configure['schema_list'].remove(schema)
 
 def set_default_schema(schema, configure):
-    if schema not in configure['schema_list']:
-        return
-    configure['schema_list'].remove(schema)
-    configure['schema_list'].insert(0, schema)
-
+    with open('/etc/rime-default-schema.conf', 'w') as f:
+        f.write(schema)
 
 def main():
     parser = argparse.ArgumentParser(description='rime-schema-manage is a tool to manage /usr/share/rime-data/default.yaml')
@@ -40,6 +37,9 @@ def main():
 
     with open('/usr/share/rime-data/default.yaml', 'r') as f:
         configure = yaml.safe_load(f)
+
+    with open('/etc/rime-default-schema.conf', 'r') as f:
+        default = f.readline()
 
     if type(configure['schema_list']) == list:
         configure['schema_list'] = configure.get('schema_list', [])
@@ -60,8 +60,10 @@ def main():
 
     if args.set_default_schema:
         schema = args.set_default_schema
-        schema = {'schema': schema}
         set_default_schema(schema, configure)
+
+    configure['schema'].remove({'schema': default})
+    configure['schema'].insert(0, {'schema': default})
 
     with open('/usr/share/rime-data/default.yaml', 'w') as f:
         yaml.dump(configure, Dumper=MyDumper,
