@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 
-import sys
 import yaml
 import argparse
 
@@ -39,7 +38,7 @@ def main():
     parser.add_argument('--add', help="Add schema to schema list. eg: rime-schema-manager --add luna_pinyin", nargs='+')
     parser.add_argument('--remove', help="Remove schema in schema list. eg: rime-schema-manager --remove luna_pinyin", nargs='+')
     args = parser.parse_args()
-    
+
     with open('/usr/share/rime-data/default.yaml', 'r') as f:
         configure = yaml.safe_load(f)
 
@@ -53,13 +52,13 @@ def main():
         for schema in schemas:
             schema = {'schema': schema}
             add(schema, configure)
-    
+
     if args.remove:
         schemas = args.remove
         for schema in schemas:
             schema = {'schema': schema}
             remove(schema, configure)
-    
+
     if args.set_default_schema:
         schema = args.set_default_schema[0]
         schema = {'schema': schema}
