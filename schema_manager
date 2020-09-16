@@ -24,7 +24,7 @@ def remove(schema, configure):
         return
     configure['schema_list'].remove(schema)
 
-def set_default_schema(schema):
+def set_default_schema(schema, configure):
     with open('/etc/rime-default-schema.conf', 'w') as f:
         f.write(schema)
 
