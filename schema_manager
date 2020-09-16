@@ -26,7 +26,6 @@ def remove(schema, configure):
 
 def set_default_schema(schema, configure):
     if schema not in configure['schema_list']:
-        print('Schema ' + schema['schema'] + ' doesn’t exist in default.yaml')
         return
     configure['schema_list'].remove(schema)
     configure['schema_list'].insert(0, schema)
