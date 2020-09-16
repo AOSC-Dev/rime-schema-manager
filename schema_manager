@@ -59,7 +59,7 @@ def main():
             remove(schema, configure)
 
     if args.set_default_schema:
-        schema = args.set_default_schema[0]
+        schema = args.set_default_schema
         schema = {'schema': schema}
         set_default_schema(schema, configure)
 
