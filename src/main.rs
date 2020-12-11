@@ -1,11 +1,21 @@
 extern crate serde_yaml;
 
-use anyhow::{ format_err, Result };
-use std::fs;
-use clap::{ Arg, App };
-use serde_yaml::Value as yamlValue;
+use anyhow::{Result, format_err};
+use std::{collections::HashMap, fs};
+use clap::{Arg, App};
+use serde::{Deserialize, Serialize};
 
+#[derive(Clone, Deserialize, Debug)]
+struct Config {
+    schema_list: Vec<HashMap<String, String>>,
+}
 
+#[derive(Clone, Deserialize, Debug)]
+struct Schema {
+    schema: String,
+}
+
+const CONFIG: &str = "/usr/share/rime-data/default.yaml";
 fn main() {
     let app = App::new("Rime Schema Manager")
         .version("0.1")
@@ -26,26 +36,16 @@ fn main() {
         let result: Vec<_> = add.values_of("INPUT").unwrap().collect();
         println!("{:?}", &result);
     } else if let Some(_echo) = app.subcommand_matches("echo") {
-        println!("{:?}", read_config());
+        let schema_list = read_config().unwrap();
+        for v in &schema_list {
+            println!("{:?}", v.get("schema").unwrap());
+        }
     }
 }
 
-fn read_config() -> Result<std::vec::Vec<serde_yaml::Value>> {
-    let config_string = fs::read_to_string("/usr/share/rime-data/default.yaml")
-        .expect("Something went wrong reading the file");
-
-    let config_data: yamlValue = serde_yaml::from_str(&config_string).expect("This file not yaml!");
-    let schema_list = match &config_data["schema_list"] {
-        yamlValue::Sequence(m) => m.to_vec(),
-        _ => {
-            return Err(format_err!("can not see schema_list!"));
-        }
-    };
-
-    for v in &schema_list {
-        println!("{:?}", v["schema"]);
-    }
-
+fn read_config() -> Result<Vec<HashMap<String, String>>> {
+    let config = fs::read_to_string(CONFIG)?;
+    let config_data: Config = serde_yaml::from_str(&config)?;
+    let schema_list = config_data.schema_list;
     Ok(schema_list)
 }
-

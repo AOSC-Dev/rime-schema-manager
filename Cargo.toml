@@ -10,3 +10,4 @@ edition = "2018"
 clap = "2.33.2"
 serde_yaml = "0.8"
 anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
