@@ -44,7 +44,7 @@ fn main() -> Result<()> {
 
     match app.subcommand() {
         ("add", Some(args)) => {
-            let config_clone = config.clone();
+            let mut config_clone = config.clone();
             let schema_lookup = list_schema(&config_clone)?;
             let schema_list = config
                 .get_mut("schema_list")
@@ -54,12 +54,18 @@ fn main() -> Result<()> {
                 if schema_lookup.contains(&entry) {
                     // exists
                     // continue;
+                    println!("Schema: {:?} already exist in default.yaml", entry);
+                } else {
+                    let mut new_entry = Mapping::new();
+                    new_entry.insert(Value::from("schema"), Value::from(entry));
+                    schema_list.push(Value::from(new_entry));
                 }
-                let mut new_entry = Mapping::new();
-                new_entry.insert(Value::from("schema"), Value::from(entry));
-                schema_list.push(Value::from(new_entry));
             }
             // write config
+            *config_clone
+                .get_mut("schema_list")
+                .unwrap() = Value::Sequence(schema_list.to_vec());
+            write_config(&config_clone)?;
         }
         ("list", _) => {
             let schema_list = list_schema(&config)?;
