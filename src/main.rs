@@ -80,14 +80,14 @@ fn main() -> Result<()> {
                 .get_mut("schema_list")
                 .ok_or_else(|| anyhow!("No schema_list section found in the config file!"))?;
             let schema_list = schema_list.as_sequence_mut().unwrap();
-            let entry: Vec<_> = args.values_of("INPUT").unwrap().collect();
-            if schema_lookup.contains(&entry[0]) {
+            let entry = args.value_of("INPUT").unwrap();
+            if schema_lookup.contains(&entry) {
                 let mut default_entry = Mapping::new();
-                default_entry.insert(Value::from("schema"), Value::from(entry[0]));
+                default_entry.insert(Value::from("schema"), Value::from(entry));
                 let mut i = 0 as usize;
                 while i < schema_list.len() {
                     if let Some(v) = schema_list[i].get("schema") {
-                        if v.as_str().unwrap() == entry[0] {
+                        if v.as_str().unwrap() == entry {
                             schema_list.remove(i);
                             break;
                         } else {
@@ -102,7 +102,8 @@ fn main() -> Result<()> {
                     .unwrap() = Value::Sequence(new_schema_list.to_vec());
                 write_config(&config_clone)?;
             } else {
-                anyhow!("schema {:?} doesn’t not exist", &entry[0]);
+                anyhow!("schema {:?} doesn’t not exist", entry);
+                println!("a");
             }
 
         }
