@@ -54,7 +54,7 @@ fn main() -> Result<()> {
                 if schema_lookup.contains(&entry) {
                     // exists
                     // continue;
-                    println!("Schema: {:?} already exist in default.yaml", entry);
+                    println!("Schema {:?} already exist in default.yaml", entry);
                 } else {
                     let mut new_entry = Mapping::new();
                     new_entry.insert(Value::from("schema"), Value::from(entry));
@@ -74,7 +74,37 @@ fn main() -> Result<()> {
             }
         }
         ("set-default", Some(args)) => {
-            // TODO
+            let mut config_clone = config.clone();
+            let schema_lookup = list_schema(&config_clone)?;
+            let schema_list = config
+                .get_mut("schema_list")
+                .ok_or_else(|| anyhow!("No schema_list section found in the config file!"))?;
+            let schema_list = schema_list.as_sequence_mut().unwrap();
+            let entry: Vec<_> = args.values_of("INPUT").unwrap().collect();
+            if schema_lookup.contains(&entry[0]) {
+                let mut default_entry = Mapping::new();
+                default_entry.insert(Value::from("schema"), Value::from(entry[0]));
+                let mut i = 0 as usize;
+                while i < schema_list.len() {
+                    if let Some(v) = schema_list[i].get("schema") {
+                        if v.as_str().unwrap() == entry[0] {
+                            schema_list.remove(i);
+                            break;
+                        } else {
+                            i += 1;
+                        }
+                    }
+                }
+                let mut new_schema_list = vec![Value::from(default_entry)];
+                new_schema_list.extend_from_slice(schema_list);
+                *config_clone
+                    .get_mut("schema_list")
+                    .unwrap() = Value::Sequence(new_schema_list.to_vec());
+                write_config(&config_clone)?;
+            } else {
+                anyhow!("schema {:?} doesn’t not exist", &entry[0]);
+            }
+
         }
         ("remove", Some(args)) => {
             // TODO
