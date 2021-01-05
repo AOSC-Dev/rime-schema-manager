@@ -102,13 +102,38 @@ fn main() -> Result<()> {
                     .unwrap() = Value::Sequence(new_schema_list.to_vec());
                 write_config(&config_clone)?;
             } else {
-                anyhow!("schema {:?} doesn’t not exist", entry);
-                println!("a");
+                println!("schema {:?} doesn’t not exist", entry);
             }
 
         }
         ("remove", Some(args)) => {
-            // TODO
+                let mut config_clone = config.clone();
+                let schema_lookup = list_schema(&config_clone)?;
+                let schema_list = config
+                    .get_mut("schema_list")
+                    .ok_or_else(|| anyhow!("No schema_list section found in the config file!"))?;
+                let schema_list = schema_list.as_sequence_mut().unwrap();
+                for entry in args.values_of("INPUT").unwrap() {
+                    if schema_lookup.contains(&entry) {
+                        let mut i = 0 as usize;
+                        while i < schema_list.len() {
+                            if let Some(v) = schema_list[i].get("schema") {
+                                if v.as_str().unwrap() == entry {
+                                    schema_list.remove(i);
+                                    break;
+                                } else {
+                                    i += 1;
+                                }
+                            }
+                        }
+                    } else {
+                        println!("Schema {:?} doesn’tnot exist in default.yaml", entry);
+                    }
+                }
+                *config_clone
+                    .get_mut("schema_list")
+                    .unwrap() = Value::Sequence(schema_list.to_vec());
+                write_config(&config_clone)?;
         }
         _ => {}
     }
