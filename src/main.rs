@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use clap::{App, Arg};
 use serde_yaml::{mapping::Mapping, Value};
-use std::{collections::HashSet, fs};
+use std::fs;
 
 const CONFIG: &str = "/usr/share/rime-data/default.yaml";
 
@@ -147,6 +147,5 @@ fn schema_list_to_vec(mut config: Value) -> Result<(Vec<Value>, Value)> {
 
 fn write_config(config: &Value) -> Result<()> {
     fs::write(CONFIG, serde_yaml::to_string(&config)?)?;
-
     Ok(())
 }
