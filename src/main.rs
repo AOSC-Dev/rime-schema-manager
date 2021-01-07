@@ -93,6 +93,8 @@ fn main() -> Result<()> {
                     .position(|v| v.get("schema").unwrap().as_str().unwrap_or("") == entry)
                 {
                     schema_list.remove(index);
+                } else {
+                    println!("schema {:?} doesn’t not exist", entry);
                 }
             }
             *config.get_mut("schema_list").unwrap() = Value::Sequence(schema_list.to_vec());
