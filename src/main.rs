@@ -44,11 +44,10 @@ fn main() -> Result<()> {
 
     match app.subcommand() {
         ("add", Some(args)) => {
-            let (schema_list, mut config) = schema_list_to_vec(config).unwrap();
+            let (mut schema_list, mut config) = schema_list_to_vec(config).unwrap();
             for entry in args.values_of("INPUT").unwrap() {
                 if list_schema(&config)?.contains(&entry) {
                     // exists
-                    // continue;
                     println!("Schema {:?} already exist in default.yaml", entry);
                     continue;
                 }
@@ -67,7 +66,7 @@ fn main() -> Result<()> {
             }
         }
         ("set-default", Some(args)) => {
-            let (schema_list, mut config) = schema_list_to_vec(config).unwrap();
+            let (mut schema_list, mut config) = schema_list_to_vec(config).unwrap();
             let entry = args.value_of("INPUT").unwrap();
 
             if let Some(index) = schema_list
@@ -78,7 +77,7 @@ fn main() -> Result<()> {
                 let mut default_entry = Mapping::new();
                 default_entry.insert(Value::from("schema"), Value::from(entry));
                 let mut new_schema_list = vec![Value::from(default_entry)];
-                new_schema_list.extend_from_slice(schema_list);
+                new_schema_list.extend_from_slice(&schema_list);
                 *config.get_mut("schema_list").unwrap() = Value::Sequence(new_schema_list.to_vec());
                 write_config(&config)?;
             } else {
@@ -86,7 +85,7 @@ fn main() -> Result<()> {
             }
         }
         ("remove", Some(args)) => {
-            let (schema_list, mut config) = schema_list_to_vec(config).unwrap();
+            let (mut schema_list, mut config) = schema_list_to_vec(config).unwrap();
             for entry in args.values_of("INPUT").unwrap() {
                 if let Some(index) = schema_list
                     .iter()
@@ -135,11 +134,13 @@ fn list_schema(config: &Value) -> Result<Vec<&str>> {
     Ok(schemas)
 }
 
-fn schema_list_to_vec<'a>(mut config: Value) -> Result<(&'a mut Vec<Value>, Value)> {
+fn schema_list_to_vec(mut config: Value) -> Result<(Vec<Value>, Value)> {
     let schema_list = config
         .get_mut("schema_list")
-        .ok_or_else(|| anyhow!("No schema_list section found in the config file!"))?;
-    let schema_list = schema_list.as_sequence_mut().unwrap();
+        .ok_or_else(|| anyhow!("No schema_list section found in the config file!"))?
+        .as_sequence_mut()
+        .unwrap()
+        .to_owned();
 
     Ok((schema_list, config))
 }
