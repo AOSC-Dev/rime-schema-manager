@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use clap::{App, Arg};
+use clap::{App, AppSettings, Arg};
 use serde_yaml::{mapping::Mapping, Value};
 use std::fs;
 
@@ -10,6 +10,7 @@ fn main() -> Result<()> {
         .version("0.1")
         .author("AOSC-Dev")
         .about("Rime Schema Manager")
+        .setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(
             App::new("add")
                 .about("Add the specified schema to the configuration")
@@ -71,7 +72,7 @@ fn main() -> Result<()> {
 
             if let Some(index) = schema_list
                 .iter()
-                .position(|v| v.as_str().unwrap_or("") == entry)
+                .position(|v| v.get("schema").unwrap().as_str().unwrap_or("") == entry)
             {
                 schema_list.remove(index);
                 let mut default_entry = Mapping::new();
@@ -89,11 +90,9 @@ fn main() -> Result<()> {
             for entry in args.values_of("INPUT").unwrap() {
                 if let Some(index) = schema_list
                     .iter()
-                    .position(|v| v.as_str().unwrap_or("") == entry)
+                    .position(|v| v.get("schema").unwrap().as_str().unwrap_or("") == entry)
                 {
                     schema_list.remove(index);
-                } else {
-                    println!("Schema {:?} doesn’t not exist in default.yaml", entry);
                 }
             }
             *config.get_mut("schema_list").unwrap() = Value::Sequence(schema_list.to_vec());
@@ -103,7 +102,6 @@ fn main() -> Result<()> {
             unreachable!()
         }
     }
-
     Ok(())
 }
 
