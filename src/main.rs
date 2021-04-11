@@ -1,14 +1,15 @@
 use anyhow::{anyhow, Result};
 use serde_yaml::{mapping::Mapping, Value};
-use std::fs;
+use std::{fs, path::Path};
 
 mod cli;
 
 const CONFIG: &str = "/usr/share/rime-data/default.yaml";
+const DATA_DIR: &str = "/usr/share/rime-data/";
 
 fn main() -> Result<()> {
     let app = cli::build_cli().get_matches();
-    let config = read_config()?;
+    let mut config = read_config()?;
 
     match app.subcommand() {
         ("add", Some(args)) => {
@@ -63,6 +64,20 @@ fn main() -> Result<()> {
             config["schema_list"] = Value::Sequence(schema_list.to_vec());
             write_config(&config)?;
         }
+        ("sync", _) => {
+            let schema_list: Vec<_> = collect_installed_schemas(DATA_DIR)?
+                .into_iter()
+                .map(|s| {
+                    let mut new_entry = Mapping::new();
+                    new_entry.insert(Value::from("schema"), Value::from(s));
+                    Value::from(new_entry)
+                })
+                .collect();
+            let count = schema_list.len();
+            config["schema_list"] = Value::Sequence(schema_list);
+            write_config(&config)?;
+            println!("Schema configuration updated. Found {} schemas.", count);
+        }
         _ => {
             unreachable!()
         }
@@ -109,6 +124,23 @@ fn schema_list_to_vec(mut config: Value) -> Result<(Vec<Value>, Value)> {
         .to_owned();
 
     Ok((schema_list, config))
+}
+
+/// Collect all the installed schemas
+fn collect_installed_schemas<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
+    let mut installed = Vec::new();
+    for entry in fs::read_dir(path)? {
+        let entry = entry?;
+        if let Some(schema) = entry
+            .file_name()
+            .to_string_lossy()
+            .strip_suffix(".schema.yaml")
+        {
+            installed.push(schema.to_string());
+        }
+    }
+
+    Ok(installed)
 }
 
 /// Write the schema list to disk

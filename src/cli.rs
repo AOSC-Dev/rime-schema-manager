@@ -26,6 +26,10 @@ pub fn build_cli() -> App<'static, 'static> {
                 ),
         )
         .subcommand(
+            SubCommand::with_name("sync")
+                .about("Synchronize the configuration files with the installed schema"),
+        )
+        .subcommand(
             SubCommand::with_name("set-default")
                 .about("Set the specified schema to be the default schema")
                 .arg(
