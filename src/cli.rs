@@ -1,5 +1,6 @@
 use clap::{crate_version, App, AppSettings, Arg, SubCommand};
 
+/// Build the CLI instance
 pub fn build_cli() -> App<'static, 'static> {
     App::new("Rime Schema Manager")
         .version(crate_version!())

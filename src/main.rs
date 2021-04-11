@@ -70,6 +70,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+/// Read RIME schema configurations
 fn read_config() -> Result<Value> {
     let config = fs::read(CONFIG)?;
     let config_data = serde_yaml::from_slice(&config)?;
@@ -77,6 +78,7 @@ fn read_config() -> Result<Value> {
     Ok(config_data)
 }
 
+/// Collect all schemas to a vector
 fn list_schema(config: &Value) -> Result<Vec<&str>> {
     let mut schemas: Vec<&str> = Vec::new();
     for entry in config
@@ -97,6 +99,7 @@ fn list_schema(config: &Value) -> Result<Vec<&str>> {
     Ok(schemas)
 }
 
+/// Unwrap the schema value to a vector
 fn schema_list_to_vec(mut config: Value) -> Result<(Vec<Value>, Value)> {
     let schema_list = config
         .get_mut("schema_list")
@@ -108,6 +111,7 @@ fn schema_list_to_vec(mut config: Value) -> Result<(Vec<Value>, Value)> {
     Ok((schema_list, config))
 }
 
+/// Write the schema list to disk
 fn write_config(config: &Value) -> Result<()> {
     fs::write(CONFIG, serde_yaml::to_string(&config)?)?;
     Ok(())
