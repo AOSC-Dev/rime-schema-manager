@@ -1,46 +1,13 @@
 use anyhow::{anyhow, Result};
-use clap::{App, AppSettings, Arg};
 use serde_yaml::{mapping::Mapping, Value};
 use std::fs;
+
+mod cli;
 
 const CONFIG: &str = "/usr/share/rime-data/default.yaml";
 
 fn main() -> Result<()> {
-    let app = App::new("Rime Schema Manager")
-        .version("0.1")
-        .author("AOSC-Dev")
-        .about("Rime Schema Manager")
-        .setting(AppSettings::ArgRequiredElseHelp)
-        .subcommand(
-            App::new("add")
-                .about("Add the specified schema to the configuration")
-                .arg(
-                    Arg::with_name("INPUT")
-                        .help("Sets the input file to use")
-                        .min_values(1),
-                ),
-        )
-        .subcommand(
-            App::new("remove")
-                .about("Remove the specified schema from the configuration")
-                .arg(
-                    Arg::with_name("INPUT")
-                        .help("Schema to be removed")
-                        .min_values(1),
-                ),
-        )
-        .subcommand(
-            App::new("set-default")
-                .about("Set the specified schema to be the default schema")
-                .arg(
-                    Arg::with_name("INPUT")
-                        .help("Schema to be set as the default")
-                        .required(true),
-                ),
-        )
-        .subcommand(App::new("list").about("List installed schema"))
-        .get_matches();
-
+    let app = cli::build_cli().get_matches();
     let config = read_config()?;
 
     match app.subcommand() {
@@ -49,7 +16,7 @@ fn main() -> Result<()> {
             for entry in args.values_of("INPUT").unwrap() {
                 if list_schema(&config)?.contains(&entry) {
                     // exists
-                    println!("Schema {:?} already exist in default.yaml", entry);
+                    println!("Schema {:?} already exists in default.yaml", entry);
                     continue;
                 }
                 let mut new_entry = Mapping::new();
@@ -57,7 +24,7 @@ fn main() -> Result<()> {
                 schema_list.push(Value::from(new_entry));
             }
             // write config
-            *config.get_mut("schema_list").unwrap() = Value::Sequence(schema_list.to_vec());
+            config["schema_list"] = Value::Sequence(schema_list);
             write_config(&config)?;
         }
         ("list", _) => {
@@ -72,14 +39,10 @@ fn main() -> Result<()> {
 
             if let Some(index) = schema_list
                 .iter()
-                .position(|v| v.get("schema").unwrap().as_str().unwrap_or("") == entry)
+                .position(|v| v["schema"].as_str().unwrap_or("") == entry)
             {
-                schema_list.remove(index);
-                let mut default_entry = Mapping::new();
-                default_entry.insert(Value::from("schema"), Value::from(entry));
-                let mut new_schema_list = vec![Value::from(default_entry)];
-                new_schema_list.extend_from_slice(&schema_list);
-                *config.get_mut("schema_list").unwrap() = Value::Sequence(new_schema_list.to_vec());
+                schema_list.swap(0, index);
+                config["schema_list"] = Value::Sequence(schema_list);
                 write_config(&config)?;
             } else {
                 println!("schema {:?} doesn’t not exist", entry);
@@ -90,14 +53,14 @@ fn main() -> Result<()> {
             for entry in args.values_of("INPUT").unwrap() {
                 if let Some(index) = schema_list
                     .iter()
-                    .position(|v| v.get("schema").unwrap().as_str().unwrap_or("") == entry)
+                    .position(|v| v["schema"].as_str().unwrap_or("") == entry)
                 {
                     schema_list.remove(index);
                 } else {
                     println!("schema {:?} doesn’t not exist", entry);
                 }
             }
-            *config.get_mut("schema_list").unwrap() = Value::Sequence(schema_list.to_vec());
+            config["schema_list"] = Value::Sequence(schema_list.to_vec());
             write_config(&config)?;
         }
         _ => {
