@@ -15,7 +15,7 @@ fn main() -> Result<()> {
         ("add", Some(args)) => {
             let (mut schema_list, mut config) = schema_list_to_vec(config).unwrap();
             for entry in args.values_of("INPUT").unwrap() {
-                if list_schema(&config)?.contains(&entry) {
+                if list_schema(&config)?.contains(&entry.to_string()) {
                     // exists
                     println!("Schema {:?} already exists in default.yaml", entry);
                     continue;
@@ -94,19 +94,25 @@ fn read_config() -> Result<Value> {
 }
 
 /// Collect all schemas to a vector
-fn list_schema(config: &Value) -> Result<Vec<&str>> {
-    let mut schemas: Vec<&str> = Vec::new();
-    for entry in config
+fn list_schema(config: &Value) -> Result<Vec<String>> {
+    let mut schemas: Vec<String> = Vec::new();
+
+    let schema_list = match config
         .get("schema_list")
         .ok_or_else(|| anyhow!("No schema_list section found in the config file!"))?
         .as_sequence()
-        .ok_or_else(|| anyhow!("schema_list is not an array!"))?
     {
+        Some(v) => v.to_owned(),
+        None => Vec::new(),
+    };
+
+    for entry in schema_list {
         if let Some(schema) = entry.get("schema") {
             schemas.push(
                 schema
                     .as_str()
-                    .ok_or_else(|| anyhow!("schema name is not a string"))?,
+                    .ok_or_else(|| anyhow!("schema name is not a string"))?
+                    .to_string(),
             );
         }
     }
@@ -116,12 +122,14 @@ fn list_schema(config: &Value) -> Result<Vec<&str>> {
 
 /// Unwrap the schema value to a vector
 fn schema_list_to_vec(mut config: Value) -> Result<(Vec<Value>, Value)> {
-    let schema_list = config
+    let schema_list = match config
         .get_mut("schema_list")
         .ok_or_else(|| anyhow!("No schema_list section found in the config file!"))?
         .as_sequence_mut()
-        .unwrap()
-        .to_owned();
+    {
+        Some(v) => v.to_owned(),
+        None => Vec::new(),
+    };
 
     Ok((schema_list, config))
 }
