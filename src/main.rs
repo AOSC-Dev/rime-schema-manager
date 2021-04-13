@@ -7,13 +7,20 @@ mod cli;
 const CONFIG: &str = "/usr/share/rime-data/default.yaml";
 const DATA_DIR: &str = "/usr/share/rime-data/";
 
+macro_rules! save_schema_list {
+    ($config:ident, $list:ident) => {
+        $config["schema_list"] = Value::Sequence($list);
+        write_config(&$config)?;
+    };
+}
+
 fn main() -> Result<()> {
     let app = cli::build_cli().get_matches();
     let mut config = read_config()?;
 
     match app.subcommand() {
         ("add", Some(args)) => {
-            let (mut schema_list, mut config) = schema_list_to_vec(config).unwrap();
+            let mut schema_list = schema_list_to_vec(&mut config).unwrap();
             for entry in args.values_of("INPUT").unwrap() {
                 if list_schema(&config)?.contains(&entry) {
                     // exists
@@ -25,17 +32,15 @@ fn main() -> Result<()> {
                 schema_list.push(Value::from(new_entry));
             }
             // write config
-            config["schema_list"] = Value::Sequence(schema_list);
-            write_config(&config)?;
+            save_schema_list!(config, schema_list);
         }
         ("list", _) => {
-            let schema_list = list_schema(&config)?;
-            for v in &schema_list {
+            for v in &list_schema(&config)? {
                 println!("{}", v);
             }
         }
         ("set-default", Some(args)) => {
-            let (mut schema_list, mut config) = schema_list_to_vec(config).unwrap();
+            let mut schema_list = schema_list_to_vec(&mut config).unwrap();
             let entry = args.value_of("INPUT").unwrap();
 
             if let Some(index) = schema_list
@@ -43,14 +48,13 @@ fn main() -> Result<()> {
                 .position(|v| v["schema"].as_str().unwrap_or("") == entry)
             {
                 schema_list.swap(0, index);
-                config["schema_list"] = Value::Sequence(schema_list);
-                write_config(&config)?;
+                save_schema_list!(config, schema_list);
             } else {
                 println!("schema {:?} doesn’t not exist", entry);
             }
         }
         ("remove", Some(args)) => {
-            let (mut schema_list, mut config) = schema_list_to_vec(config).unwrap();
+            let mut schema_list = schema_list_to_vec(&mut config).unwrap();
             for entry in args.values_of("INPUT").unwrap() {
                 if let Some(index) = schema_list
                     .iter()
@@ -61,8 +65,7 @@ fn main() -> Result<()> {
                     println!("schema {:?} doesn’t not exist", entry);
                 }
             }
-            config["schema_list"] = Value::Sequence(schema_list.to_vec());
-            write_config(&config)?;
+            save_schema_list!(config, schema_list);
         }
         ("sync", _) => {
             let schema_list: Vec<_> = collect_installed_schemas(DATA_DIR)?
@@ -74,8 +77,7 @@ fn main() -> Result<()> {
                 })
                 .collect();
             let count = schema_list.len();
-            config["schema_list"] = Value::Sequence(schema_list);
-            write_config(&config)?;
+            save_schema_list!(config, schema_list);
             println!("Schema configuration updated. Found {} schemas.", count);
         }
         _ => {
@@ -118,14 +120,14 @@ fn list_schema(config: &Value) -> Result<Vec<&str>> {
 }
 
 /// Unwrap the schema value to a vector
-fn schema_list_to_vec(mut config: Value) -> Result<(Vec<Value>, Value)> {
+fn schema_list_to_vec(config: &mut Value) -> Result<Vec<Value>> {
     let schema_list = config
         .get_mut("schema_list")
         .ok_or_else(|| anyhow!("No schema_list section found in the config file!"))?
         .as_sequence_mut()
         .map_or_else(|| Vec::new(), |x| x.to_owned());
 
-    Ok((schema_list, config))
+    Ok(schema_list)
 }
 
 /// Collect all the installed schemas
