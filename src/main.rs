@@ -125,7 +125,7 @@ fn schema_list_to_vec(config: &mut Value) -> Result<Vec<Value>> {
         .get_mut("schema_list")
         .ok_or_else(|| anyhow!("No schema_list section found in the config file!"))?
         .as_sequence_mut()
-        .map_or_else(|| Vec::new(), |x| x.to_owned());
+        .map_or_else(Vec::new, |x| x.to_owned());
 
     Ok(schema_list)
 }
