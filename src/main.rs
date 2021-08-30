@@ -1,5 +1,7 @@
-use anyhow::{anyhow, Result};
-use serde_yaml::{mapping::Mapping, Value};
+use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use serde_yaml::Value;
+use std::{collections::HashMap, fs::File};
 use std::{fs, path::Path};
 
 mod cli;
@@ -7,11 +9,16 @@ mod cli;
 const CONFIG: &str = "/usr/share/rime-data/default.yaml";
 const DATA_DIR: &str = "/usr/share/rime-data/";
 
-macro_rules! save_schema_list {
-    ($config:ident, $list:ident) => {
-        $config["schema_list"] = Value::Sequence($list);
-        write_config(&$config)?;
-    };
+#[derive(Deserialize, Serialize, Debug)]
+struct SchemaItem {
+    schema: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+struct SchemaConfig {
+    schema_list: Vec<SchemaItem>,
+    #[serde(flatten)]
+    other: HashMap<String, Value>,
 }
 
 fn main() -> Result<()> {
@@ -20,64 +27,54 @@ fn main() -> Result<()> {
 
     match app.subcommand() {
         ("add", Some(args)) => {
-            let mut schema_list = schema_list_to_vec(&mut config).unwrap();
+            let schema_list = &mut config.schema_list;
             for entry in args.values_of("INPUT").unwrap() {
-                if list_schema(&config)?.contains(&entry) {
+                if schema_list.iter().any(|s| s.schema == entry) {
                     // exists
                     println!("Schema {:?} already exists in default.yaml", entry);
                     continue;
                 }
-                let mut new_entry = Mapping::new();
-                new_entry.insert(Value::from("schema"), Value::from(entry));
-                schema_list.push(Value::from(new_entry));
+                schema_list.push(SchemaItem {
+                    schema: entry.to_owned(),
+                });
             }
             // write config
-            save_schema_list!(config, schema_list);
+            write_config(config)?;
         }
         ("list", _) => {
-            for v in &list_schema(&config)? {
-                println!("{}", v);
+            for v in config.schema_list {
+                println!("{}", v.schema);
             }
         }
         ("set-default", Some(args)) => {
-            let mut schema_list = schema_list_to_vec(&mut config).unwrap();
+            let schema_list = &mut config.schema_list;
             let entry = args.value_of("INPUT").unwrap();
 
-            if let Some(index) = schema_list
-                .iter()
-                .position(|v| v["schema"].as_str().unwrap_or("") == entry)
-            {
+            if let Some(index) = schema_list.iter().position(|v| v.schema == entry) {
                 schema_list.swap(0, index);
-                save_schema_list!(config, schema_list);
+                write_config(config)?;
             } else {
                 println!("schema {:?} doesn’t not exist", entry);
             }
         }
         ("remove", Some(args)) => {
-            let mut schema_list = schema_list_to_vec(&mut config).unwrap();
+            let schema_list = &mut config.schema_list;
             for entry in args.values_of("INPUT").unwrap() {
-                if let Some(index) = schema_list
-                    .iter()
-                    .position(|v| v["schema"].as_str().unwrap_or("") == entry)
-                {
+                if let Some(index) = schema_list.iter().position(|v| v.schema == entry) {
                     schema_list.remove(index);
                 } else {
                     println!("schema {:?} doesn’t not exist", entry);
                 }
             }
-            save_schema_list!(config, schema_list);
+            write_config(config)?;
         }
         ("sync", _) => {
             let schema_list: Vec<_> = collect_installed_schemas(DATA_DIR)?
                 .into_iter()
-                .map(|s| {
-                    let mut new_entry = Mapping::new();
-                    new_entry.insert(Value::from("schema"), Value::from(s));
-                    Value::from(new_entry)
-                })
+                .map(|s| SchemaItem { schema: s })
                 .collect();
             let count = schema_list.len();
-            save_schema_list!(config, schema_list);
+            write_config(config)?;
             println!("Schema configuration updated. Found {} schemas.", count);
         }
         _ => {
@@ -88,46 +85,11 @@ fn main() -> Result<()> {
 }
 
 /// Read RIME schema configurations
-fn read_config() -> Result<Value> {
-    let config = fs::read(CONFIG)?;
-    let config_data = serde_yaml::from_slice(&config)?;
+fn read_config() -> Result<SchemaConfig> {
+    let config = File::open(CONFIG)?;
+    let config_data = serde_yaml::from_reader(&config)?;
 
     Ok(config_data)
-}
-
-/// Collect all schemas to a vector
-fn list_schema(config: &Value) -> Result<Vec<&str>> {
-    let schema_list = config
-        .get("schema_list")
-        .ok_or_else(|| anyhow!("No schema_list section found in the config file!"))?
-        .as_sequence();
-    if schema_list.is_none() {
-        return Ok(Vec::new());
-    }
-
-    let mut schemas = Vec::new();
-    for entry in schema_list.unwrap() {
-        if let Some(schema) = entry.get("schema") {
-            schemas.push(
-                schema
-                    .as_str()
-                    .ok_or_else(|| anyhow!("schema name is not a string"))?,
-            );
-        }
-    }
-
-    Ok(schemas)
-}
-
-/// Unwrap the schema value to a vector
-fn schema_list_to_vec(config: &mut Value) -> Result<Vec<Value>> {
-    let schema_list = config
-        .get_mut("schema_list")
-        .ok_or_else(|| anyhow!("No schema_list section found in the config file!"))?
-        .as_sequence_mut()
-        .map_or_else(Vec::new, |x| x.to_owned());
-
-    Ok(schema_list)
 }
 
 /// Collect all the installed schemas
@@ -148,7 +110,7 @@ fn collect_installed_schemas<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
 }
 
 /// Write the schema list to disk
-fn write_config(config: &Value) -> Result<()> {
-    fs::write(CONFIG, serde_yaml::to_string(&config)?)?;
+fn write_config(config: SchemaConfig) -> Result<()> {
+    fs::write(CONFIG, serde_yaml::to_vec(&config)?)?;
     Ok(())
 }
