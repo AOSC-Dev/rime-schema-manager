@@ -16,6 +16,7 @@ struct SchemaItem {
 
 #[derive(Deserialize, Serialize, Debug)]
 struct SchemaConfig {
+    #[serde(default)]
     schema_list: Vec<SchemaItem>,
     #[serde(flatten)]
     other: HashMap<String, Value>,
@@ -69,11 +70,11 @@ fn main() -> Result<()> {
             write_config(config)?;
         }
         ("sync", _) => {
-            let schema_list: Vec<_> = collect_installed_schemas(DATA_DIR)?
+            config.schema_list = collect_installed_schemas(DATA_DIR)?
                 .into_iter()
                 .map(|s| SchemaItem { schema: s })
                 .collect();
-            let count = schema_list.len();
+            let count = config.schema_list.len();
             write_config(config)?;
             println!("Schema configuration updated. Found {} schemas.", count);
         }
