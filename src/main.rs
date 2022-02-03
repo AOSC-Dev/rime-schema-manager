@@ -27,7 +27,7 @@ fn main() -> Result<()> {
     let mut config = read_config()?;
 
     match app.subcommand() {
-        ("add", Some(args)) => {
+        Some(("add", args)) => {
             let schema_list = &mut config.schema_list;
             for entry in args.values_of("INPUT").unwrap() {
                 if schema_list.iter().any(|s| s.schema == entry) {
@@ -42,12 +42,12 @@ fn main() -> Result<()> {
             // write config
             write_config(config)?;
         }
-        ("list", _) => {
+        Some(("list", _)) => {
             for v in config.schema_list {
                 println!("{}", v.schema);
             }
         }
-        ("set-default", Some(args)) => {
+        Some(("set-default", args)) => {
             let schema_list = &mut config.schema_list;
             let entry = args.value_of("INPUT").unwrap();
 
@@ -58,7 +58,7 @@ fn main() -> Result<()> {
                 println!("schema {:?} doesn’t not exist", entry);
             }
         }
-        ("remove", Some(args)) => {
+        Some(("remove", args)) => {
             let schema_list = &mut config.schema_list;
             for entry in args.values_of("INPUT").unwrap() {
                 if let Some(index) = schema_list.iter().position(|v| v.schema == entry) {
@@ -69,7 +69,7 @@ fn main() -> Result<()> {
             }
             write_config(config)?;
         }
-        ("sync", _) => {
+        Some(("sync", _)) => {
             config.schema_list = collect_installed_schemas(DATA_DIR)?
                 .into_iter()
                 .map(|s| SchemaItem { schema: s })

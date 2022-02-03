@@ -1,42 +1,37 @@
-use clap::{crate_version, App, AppSettings, Arg, SubCommand};
+use clap::{App, AppSettings, Arg};
 
 /// Build the CLI instance
-pub fn build_cli() -> App<'static, 'static> {
+pub fn build_cli() -> App<'static> {
     App::new("Rime Schema Manager")
-        .version(crate_version!())
+        .version(env!("CARGO_PKG_VERSION"))
         .author("AOSC-Dev")
         .about("Rime Schema Manager")
         .setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(
-            SubCommand::with_name("add")
+            App::new("add")
                 .about("Add the specified schema to the configuration")
                 .arg(
-                    Arg::with_name("INPUT")
+                    Arg::new("INPUT")
                         .help("Sets the input file to use")
                         .min_values(1),
                 ),
         )
         .subcommand(
-            SubCommand::with_name("remove")
+            App::new("remove")
                 .about("Remove the specified schema from the configuration")
-                .arg(
-                    Arg::with_name("INPUT")
-                        .help("Schema to be removed")
-                        .min_values(1),
-                ),
+                .arg(Arg::new("INPUT").help("Schema to be removed").min_values(1)),
         )
         .subcommand(
-            SubCommand::with_name("sync")
-                .about("Synchronize the configuration files with the installed schema"),
+            App::new("sync").about("Synchronize the configuration files with the installed schema"),
         )
         .subcommand(
-            SubCommand::with_name("set-default")
+            App::new("set-default")
                 .about("Set the specified schema to be the default schema")
                 .arg(
-                    Arg::with_name("INPUT")
+                    Arg::new("INPUT")
                         .help("Schema to be set as the default")
                         .required(true),
                 ),
         )
-        .subcommand(SubCommand::with_name("list").about("List installed schema"))
+        .subcommand(App::new("list").about("List installed schema"))
 }
