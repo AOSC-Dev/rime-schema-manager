@@ -112,6 +112,8 @@ fn collect_installed_schemas<P: AsRef<Path>>(path: P) -> Result<Vec<String>> {
 
 /// Write the schema list to disk
 fn write_config(config: SchemaConfig) -> Result<()> {
-    fs::write(CONFIG, serde_yaml::to_vec(&config)?)?;
+    let file = fs::File::create(CONFIG)?;
+    serde_yaml::to_writer(file, &config)?;
+
     Ok(())
 }
