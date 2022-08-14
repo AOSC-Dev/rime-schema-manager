@@ -1,6 +1,6 @@
 [package]
 name = "rime-schema-manager"
-version = "0.2.4"
+version = "0.2.5-alpha.0"
 authors = ["eatradish <sakiiily@aosc.io>"]
 edition = "2018"
 
