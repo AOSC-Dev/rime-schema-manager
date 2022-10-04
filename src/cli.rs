@@ -1,31 +1,31 @@
-use clap::{App, AppSettings, Arg};
+use clap::{Command, Arg};
 
 /// Build the CLI instance
-pub fn build_cli() -> App<'static> {
-    App::new("Rime Schema Manager")
+pub fn build_cli() -> Command {
+    Command::new("Rime Schema Manager")
         .version(env!("CARGO_PKG_VERSION"))
         .author("AOSC-Dev")
         .about("Rime Schema Manager")
-        .setting(AppSettings::ArgRequiredElseHelp)
+        .arg_required_else_help(true)
         .subcommand(
-            App::new("add")
+            Command::new("add")
                 .about("Add the specified schema to the configuration")
                 .arg(
                     Arg::new("INPUT")
                         .help("Sets the input file to use")
-                        .min_values(1),
+                        .num_args(1..),
                 ),
         )
         .subcommand(
-            App::new("remove")
+            Command::new("remove")
                 .about("Remove the specified schema from the configuration")
-                .arg(Arg::new("INPUT").help("Schema to be removed").min_values(1)),
+                .arg(Arg::new("INPUT").help("Schema to be removed").num_args(1..)),
         )
         .subcommand(
-            App::new("sync").about("Synchronize the configuration files with the installed schema"),
+            Command::new("sync").about("Synchronize the configuration files with the installed schema"),
         )
         .subcommand(
-            App::new("set-default")
+            Command::new("set-default")
                 .about("Set the specified schema to be the default schema")
                 .arg(
                     Arg::new("INPUT")
@@ -33,5 +33,5 @@ pub fn build_cli() -> App<'static> {
                         .required(true),
                 ),
         )
-        .subcommand(App::new("list").about("List installed schema"))
+        .subcommand(Command::new("list").about("List installed schema"))
 }

@@ -29,8 +29,8 @@ fn main() -> Result<()> {
     match app.subcommand() {
         Some(("add", args)) => {
             let schema_list = &mut config.schema_list;
-            for entry in args.values_of("INPUT").unwrap() {
-                if schema_list.iter().any(|s| s.schema == entry) {
+            for entry in args.get_many::<String>("INPUT").unwrap() {
+                if schema_list.iter().any(|s| &s.schema == entry) {
                     // exists
                     println!("Schema {:?} already exists in default.yaml", entry);
                     continue;
@@ -49,9 +49,9 @@ fn main() -> Result<()> {
         }
         Some(("set-default", args)) => {
             let schema_list = &mut config.schema_list;
-            let entry = args.value_of("INPUT").unwrap();
+            let entry = args.get_one::<String>("INPUT").unwrap();
 
-            if let Some(index) = schema_list.iter().position(|v| v.schema == entry) {
+            if let Some(index) = schema_list.iter().position(|v| &v.schema == entry) {
                 schema_list.swap(0, index);
                 write_config(config)?;
             } else {
@@ -60,8 +60,8 @@ fn main() -> Result<()> {
         }
         Some(("remove", args)) => {
             let schema_list = &mut config.schema_list;
-            for entry in args.values_of("INPUT").unwrap() {
-                if let Some(index) = schema_list.iter().position(|v| v.schema == entry) {
+            for entry in args.get_many::<String>("INPUT").unwrap() {
+                if let Some(index) = schema_list.iter().position(|v| &v.schema == entry) {
                     schema_list.remove(index);
                 } else {
                     println!("schema {:?} doesn’t not exist", entry);
