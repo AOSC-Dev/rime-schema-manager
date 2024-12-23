@@ -1,10 +1,9 @@
 use anyhow::Result;
+use clap::Parser;
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 use std::{collections::HashMap, fs::File};
 use std::{fs, path::Path};
-
-mod cli;
 
 const CONFIG: &str = "/usr/share/rime-data/default.yaml";
 const DATA_DIR: &str = "/usr/share/rime-data/";
@@ -22,15 +21,48 @@ struct SchemaConfig {
     other: HashMap<String, Value>,
 }
 
+/// Rime Schema Manager
+#[derive(Parser, Debug)]
+#[command(version, about, author = "AOSC-Dev", long_about = None)]
+enum RimeSchemaManagerCli {
+    /// Add the specified schema to the configuration
+    #[command()]
+    Add {
+        /// Sets the input file to use
+        #[arg(required = true)]
+        input: Vec<String>,
+    },
+    /// Remove the specified schema from the configuration
+    #[command()]
+    Remove {
+        /// Schema to be removed
+        #[arg(required = true)]
+        input: Vec<String>,
+    },
+    /// Synchronize the configuration files with the installed schema
+    #[command()]
+    Sync,
+    /// Set the specified schema to be the default schema
+    #[command()]
+    SetDefault {
+        /// Schema to be set as the default
+        #[arg(required = true)]
+        input: String,
+    },
+    /// List installed schema
+    #[command()]
+    List,
+}
+
 fn main() -> Result<()> {
-    let app = cli::build_cli().get_matches();
+    let app = RimeSchemaManagerCli::parse();
     let mut config = read_config()?;
 
-    match app.subcommand() {
-        Some(("add", args)) => {
+    match app {
+        RimeSchemaManagerCli::Add { input } => {
             let schema_list = &mut config.schema_list;
-            for entry in args.get_many::<String>("INPUT").unwrap() {
-                if schema_list.iter().any(|s| &s.schema == entry) {
+            for entry in input {
+                if schema_list.iter().any(|s| s.schema == entry) {
                     // exists
                     println!("Schema {:?} already exists in default.yaml", entry);
                     continue;
@@ -42,34 +74,32 @@ fn main() -> Result<()> {
             // write config
             write_config(config)?;
         }
-        Some(("list", _)) => {
+        RimeSchemaManagerCli::List => {
             for v in config.schema_list {
                 println!("{}", v.schema);
             }
         }
-        Some(("set-default", args)) => {
+        RimeSchemaManagerCli::SetDefault { input } => {
             let schema_list = &mut config.schema_list;
-            let entry = args.get_one::<String>("INPUT").unwrap();
-
-            if let Some(index) = schema_list.iter().position(|v| &v.schema == entry) {
+            if let Some(index) = schema_list.iter().position(|v| v.schema == input) {
                 schema_list.swap(0, index);
                 write_config(config)?;
             } else {
-                println!("schema {:?} doesn’t not exist", entry);
+                println!("schema {:?} does not exist", input);
             }
         }
-        Some(("remove", args)) => {
+        RimeSchemaManagerCli::Remove { input } => {
             let schema_list = &mut config.schema_list;
-            for entry in args.get_many::<String>("INPUT").unwrap() {
-                if let Some(index) = schema_list.iter().position(|v| &v.schema == entry) {
+            for entry in input {
+                if let Some(index) = schema_list.iter().position(|v| v.schema == entry) {
                     schema_list.remove(index);
                 } else {
-                    println!("schema {:?} doesn’t not exist", entry);
+                    println!("schema {:?} does not exist", entry);
                 }
             }
             write_config(config)?;
         }
-        Some(("sync", _)) => {
+        RimeSchemaManagerCli::Sync => {
             config.schema_list = collect_installed_schemas(DATA_DIR)?
                 .into_iter()
                 .map(|s| SchemaItem { schema: s })
@@ -78,10 +108,8 @@ fn main() -> Result<()> {
             write_config(config)?;
             println!("Schema configuration updated. Found {} schemas.", count);
         }
-        _ => {
-            unreachable!()
-        }
     }
+
     Ok(())
 }
 
